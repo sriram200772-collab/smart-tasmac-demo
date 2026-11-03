@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SMART TASMAC | Demo Scanner</title>
+<script src="https://unpkg.com/html5-qrcode"></script>
+<style>
+:root{--bg:#090b10;--panel:#151a23;--line:#303847;--red:#e52d42;--muted:#aab3c2;--white:#f5f7fa;--green:#42c58a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#42101b,transparent 35%),var(--bg);color:var(--white);font:15px/1.5 system-ui,Arial,sans-serif}
+header{padding:18px 5%;border-bottom:1px solid var(--line);background:#080a0ddd;position:sticky;top:0}
+.brand{font-weight:900;font-size:22px;letter-spacing:1px}.brand span{color:var(--red)}
+main{max-width:1050px;margin:24px auto;padding:0 16px}.warning{background:#2b2110;border:1px solid #8b6725;color:#ffdc91;padding:12px 15px;border-radius:12px;margin-bottom:18px;font-weight:700}
+.layout{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+h1{font-size:28px;margin:5px 0 12px}h2{font-size:18px;margin:0 0 12px}.muted{color:var(--muted)}button,select{border:0;border-radius:10px;padding:12px 15px;font-weight:800;font-size:14px;cursor:pointer}
+button{background:var(--red);color:white}button.secondary{background:#293140;color:white}button:disabled{opacity:.5;cursor:not-allowed}
+#reader{width:100%;overflow:hidden;border-radius:12px;background:#05070a;min-height:220px}#reader video{border-radius:12px}
+label{display:block;margin:12px 0 5px;color:var(--muted);font-size:13px}select{background:#0b1018;color:white;border:1px solid var(--line);width:100%}
+.profile{display:none}.profile.show{display:block}.tag{display:inline-block;padding:4px 9px;background:#35141c;color:#ff9aa6;border-radius:20px;font-size:11px;font-weight:900}
+.progress{height:12px;background:#303847;border-radius:20px;overflow:hidden;margin:10px 0}.bar{height:100%;width:0;background:linear-gradient(90deg,#e52d42,#ff7a54)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{padding:12px;background:#0e131c;border-radius:10px}.big{font-size:23px;font-weight:900}
+.message{margin-top:12px;padding:12px;border-radius:10px;background:#10251c;color:#a9f2ca;display:none}.message.show{display:block}.err{background:#35151b;color:#ffb4bd}
+.qrbox{text-align:center}.qrbox img{width:180px;max-width:70%;background:white;padding:10px;border-radius:10px}.small{font-size:12px}
+footer{text-align:center;color:var(--muted);padding:20px;font-size:12px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}h1{font-size:23px}}
+</style></head>
+<body>
+<header><div class="brand">SMART <span>TASMAC</span> • DEMO SCANNER</div></header>
+<main>
+<div class="warning">DEMO ONLY — இது கல்லூரி presentation-க்கான simulation. உண்மையான மது விற்பனை, Aadhaar verification அல்லது payment எதுவும் நடக்காது.</div>
+<h1>Customer QR Verification</h1>
+<p class="muted">Demo customer QR-ஐ scan செய்து purchase workflow-ஐ simulate செய்யுங்கள்.</p>
+<div class="layout">
+<section>
+<div class="card">
+<h2>1. Scan demo QR</h2>
+<div id="reader"></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+<button id="startBtn" onclick="startScan()">Start Camera Scanner</button>
+<button class="secondary" onclick="stopScan()">Stop Scanner</button>
+</div>
+<div class="muted small" style="margin-top:9px">Camera permission கேட்டால் Allow செய்யவும். Camera scan-க்கு HTTPS website அல்லது localhost தேவைப்படலாம்.</div>
+<div class="field">
+<label for="manual">Camera வேலை செய்யாவிட்டால் Demo ID உள்ளிடவும்</label>
+<select id="manual"><option value="">Choose demo customer</option><option value="SMART-TASMAC-DEMO:DEMO-1001">DEMO-1001</option><option value="SMART-TASMAC-DEMO:DEMO-1002">DEMO-1002</option></select>
+<button class="secondary" style="margin-top:8px;width:100%" onclick="manualScan()">Use Demo ID</button>
+</div>
+<div id="scanMsg" class="message"></div>
+</div>
+<div class="card qrbox">
+<h2>Presentation QR Card</h2>
+<img src="data:image/png;base64,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" alt="Fictional demo QR code">
+<p><b>DEMO-1001</b></p>
+<p class="muted small">இந்த QR-ஐ print செய்யலாம் அல்லது வேறு phone-ல் காட்டி scanner-ல் scan செய்யலாம்.</p>
+</div>
+</section>
+<section>
+<div class="card profile" id="profile">
+<div class="tag">DEMO CUSTOMER VERIFIED</div>
+<h2 style="margin-top:12px">Customer profile</h2>
+<div class="stats">
+<div class="stat"><div class="muted small">Demo ID</div><div class="big" id="custId">—</div></div>
+<div class="stat"><div class="muted small">Mode</div><div class="big">Demo</div></div>
+</div>
+<h2 style="margin-top:18px">Daily volume tracker</h2>
+<div class="stats">
+<div class="stat"><div class="muted small">Demo daily cap*</div><div class="big">375 ml</div></div>
+<div class="stat"><div class="muted small">Already recorded</div><div class="big" id="used">0 ml</div></div>
+</div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<p class="muted small" id="remaining">Remaining demo allowance: 375 ml</p>
+<label for="qty">Select simulated quantity</label>
+<select id="qty"><option value="90">90 ml</option><option value="180">180 ml</option><option value="375">375 ml</option></select>
+<button style="width:100%;margin-top:12px" onclick="simulatePurchase()">Simulate purchase</button>
+<div id="purchaseMsg" class="message"></div>
+<p class="muted small">*375 ml என்பது project demo-க்காக தேர்ந்தெடுத்த assumption மட்டுமே; official TASMAC/legal limit அல்ல.</p>
+</div>
+<div class="card">
+<h2>Demo transaction log</h2><div id="log" class="muted small">No demo transactions yet.</div>
+<button class="secondary" style="margin-top:12px;width:100%" onclick="resetDemo()">Reset demo</button>
+</div>
+</section>
+</div>
+</main>
+<footer>SMART TASMAC • College presentation prototype • Not affiliated with TASMAC or any government authority</footer>
+<script>
+let scanner=null, currentId=null;
+const records={"DEMO-1001":0,"DEMO-1002":120};
+function showMsg(id,text,isErr=false){const el=document.getElementById(id);el.textContent=text;el.className="message show"+(isErr?" err":"")}
+function onDecoded(text){
+  if(!text.startsWith("SMART-TASMAC-DEMO:")){showMsg("scanMsg","Invalid demo QR. Please scan the SMART TASMAC demo QR.",true);return;}
+  const id=text.split(":")[1];
+  if(!(id in records)){showMsg("scanMsg","Demo customer not found.",true);return;}
+  currentId=id; renderProfile(); showMsg("scanMsg","Demo QR scanned successfully."); stopScan();
+}
+async function startScan(){
+  if(!window.Html5Qrcode){showMsg("scanMsg","Scanner library load ஆகவில்லை. Internet connection check செய்யவும்; கீழே உள்ள Demo ID option பயன்படுத்தலாம்.",true);return;}
+  try{
+    if(!scanner) scanner=new Html5Qrcode("reader");
+    const cams=await Html5Qrcode.getCameras();
+    if(!cams.length) throw new Error("No camera found");
+    const cam=cams.find(c=>/back|rear|environment/i.test(c.label))||cams[0];
+    await scanner.start(cam.id,{fps:10,qrbox:{width:230,height:230}},onDecoded);
+    document.getElementById("startBtn").disabled=true;
+  }catch(e){showMsg("scanMsg","Camera start ஆகவில்லை. Browser camera permission / HTTPS check செய்யவும். Demo ID option பயன்படுத்தலாம்.",true);}
+}
+async function stopScan(){
+  if(scanner && scanner.isScanning){try{await scanner.stop();}catch(e){}}
+  document.getElementById("startBtn").disabled=false;
+}
+function manualScan(){const v=document.getElementById("manual").value;if(!v){showMsg("scanMsg","முதலில் Demo ID தேர்வு செய்யவும்.",true);return;}onDecoded(v);}
+function renderProfile(){
+  document.getElementById("profile").classList.add("show");
+  document.getElementById("custId").textContent=currentId;
+  const used=records[currentId], remaining=Math.max(0,375-used);
+  document.getElementById("used").textContent=used+" ml";
+  document.getElementById("remaining").textContent="Remaining demo allowance: "+remaining+" ml";
+  document.getElementById("bar").style.width=Math.min(100,used/375*100)+"%";
+  document.getElementById("qty").innerHTML='<option value="90">90 ml</option><option value="180">180 ml</option><option value="375">375 ml</option>';
+  [...document.getElementById("qty").options].forEach(o=>o.disabled=Number(o.value)>remaining);
+  document.getElementById("purchaseMsg").className="message";
+}
+function simulatePurchase(){
+  if(!currentId)return;
+  const qty=Number(document.getElementById("qty").value);
+  if(records[currentId]+qty>375){showMsg("purchaseMsg","Demo daily limit exceeded. Transaction blocked.",true);return;}
+  records[currentId]+=qty;renderProfile();
+  showMsg("purchaseMsg","DEMO APPROVED — simulated transaction only. No product sold and no payment taken.");
+  const log=document.getElementById("log");
+  const line=document.createElement("div");line.textContent=new Date().toLocaleTimeString()+" • "+currentId+" • "+qty+" ml • DEMO APPROVED";
+  if(log.textContent==="No demo transactions yet.")log.textContent="";
+  log.prepend(line);
+}
+function resetDemo(){records["DEMO-1001"]=0;records["DEMO-1002"]=120;currentId=null;document.getElementById("profile").classList.remove("show");document.getElementById("log").textContent="No demo transactions yet.";document.getElementById("scanMsg").className="message";document.getElementById("purchaseMsg").className="message";}
+</script>
+</body></html>
