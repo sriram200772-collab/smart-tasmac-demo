@@ -130,6 +130,13 @@ function simulatePurchase(){
   if(log.textContent==="No demo transactions yet.")log.textContent="";
   log.prepend(line);
 }
-function resetDemo(){records["DEMO-1001"]=0;records["DEMO-1002"]=120;currentId=null;document.getElementById("profile").classList.remove("show");document.getElementById("log").textContent="No demo transactions yet.";document.getElementById("scanMsg").className="message";document.getElementById("purchaseMsg").className="message";}
+function resetDemo(){records["DEMO-1001"]=0;records["DEMO-1002"]=120;currentId=null;document.getElementById("profile").classList.remove("show");document.getElementById("log").textContent="No demo transactions yet.";document.getElementById("scanMsg").className="message";document.getElementById("purchaseMsg").className="message;}
+  const params = new URLSearchParams(window.location.search);
+const customer = params.get("customer");
+
+if (customer) {
+  document.getElementById("customer").value = customer;
+  verify();
+    }
 </script>
 </body></html>
